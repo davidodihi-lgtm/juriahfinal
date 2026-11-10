@@ -1,0 +1,9 @@
+{
+  "name": "juriah-monique-adornments",
+  "private": true,
+  "version": "1.0.0",
+  "dependencies": {
+    "@supabase/supabase-js": "^2.45.4",
+    "stripe": "^17.0.0"
+  }
+}

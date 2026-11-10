@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex,nofollow">
+<title>Juriah Monique Adornments — Shop Admin</title>
+<link href="https://fonts.googleapis.com/css2?family=Allura&family=Cormorant+Garamond:wght@500;600&family=Jost:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{--blush-deep:#C06D85;--blush-pale:#F3D9DF;--cream:#FAF3EA;--cream-deep:#F2E6D6;--gold:#C6A15B;--brown:#6B5040;--ink:#4A3B36;--line:rgba(107,80,64,.18);}
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'Jost',sans-serif;background:var(--cream);color:var(--ink);min-height:100vh;}
+  .brand{font-family:'Allura',cursive;font-size:2rem;color:var(--blush-deep);line-height:1;}
+  .brand span{display:block;font-family:'Cormorant Garamond',serif;font-size:.6rem;letter-spacing:.24em;text-transform:uppercase;color:var(--gold);margin-top:2px;}
+  .hidden{display:none !important;}
+  button{font-family:'Jost',sans-serif;cursor:pointer;}
+  .btn{background:var(--blush-deep);color:#fff;border:none;padding:11px 22px;border-radius:999px;font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;}
+  .btn:hover{opacity:.9;} .btn:disabled{opacity:.5;cursor:not-allowed;}
+  .btn.ghost{background:transparent;color:var(--brown);border:1px solid var(--line);}
+  .btn.danger{background:transparent;color:#b3412f;border:1px solid #e3b9b0;}
+  input,textarea,select{width:100%;border:1px solid var(--line);background:#fff;padding:11px 14px;border-radius:12px;font-family:'Jost',sans-serif;font-size:.9rem;color:var(--ink);}
+  input:focus,textarea:focus,select:focus{outline:2px solid var(--blush-deep);outline-offset:1px;}
+  label{display:block;font-size:.68rem;letter-spacing:.14em;text-transform:uppercase;color:var(--brown);margin:14px 0 6px;font-weight:500;}
+
+  /* login */
+  .login{max-width:380px;margin:12vh auto;padding:40px 32px;background:#fff;border:1px solid var(--line);border-radius:24px;text-align:center;}
+  .login p.sub{font-size:.85rem;color:var(--brown);opacity:.7;margin:10px 0 8px;}
+  .login form{text-align:left;}
+  .login .btn{width:100%;margin-top:22px;}
+  .msg{font-size:.8rem;margin-top:14px;min-height:1.2em;text-align:center;color:#b3412f;}
+  .msg.ok{color:#4b7a4b;}
+
+  /* app */
+  header.bar{display:flex;align-items:center;justify-content:space-between;padding:18px 5vw;background:#fff;border-bottom:1px solid var(--line);position:sticky;top:0;z-index:10;gap:12px;flex-wrap:wrap;}
+  .bar .right{display:flex;gap:10px;align-items:center;flex-wrap:wrap;}
+  .bar .who{font-size:.75rem;color:var(--brown);opacity:.7;}
+  main{max-width:960px;margin:0 auto;padding:28px 5vw 80px;}
+  .toolbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;gap:12px;flex-wrap:wrap;}
+  .toolbar h1{font-family:'Cormorant Garamond',serif;font-size:1.8rem;color:var(--brown);font-weight:600;}
+  .list{display:flex;flex-direction:column;gap:12px;}
+  .row{display:flex;align-items:center;gap:14px;background:#fff;border:1px solid var(--line);border-radius:18px;padding:12px 14px;}
+  .row img{width:64px;height:64px;border-radius:12px;object-fit:cover;background:var(--cream-deep);flex-shrink:0;}
+  .row .info{flex:1;min-width:0;}
+  .row .name{font-weight:500;color:var(--brown);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .row .meta{font-size:.78rem;color:var(--gold);margin-top:3px;}
+  .tag{display:inline-block;font-size:.62rem;letter-spacing:.1em;text-transform:uppercase;padding:3px 9px;border-radius:999px;background:var(--blush-pale);color:var(--blush-deep);margin-left:6px;}
+  .tag.off{background:var(--brown);color:var(--cream);}
+  .empty{text-align:center;padding:50px 0;color:var(--brown);opacity:.6;}
+
+  /* modal */
+  .overlay{position:fixed;inset:0;background:rgba(74,59,54,.45);display:flex;align-items:flex-start;justify-content:center;padding:4vh 4vw;overflow-y:auto;z-index:50;}
+  .modal{background:var(--cream);border-radius:24px;width:100%;max-width:560px;padding:28px 28px 26px;}
+  .modal h2{font-family:'Cormorant Garamond',serif;font-size:1.5rem;color:var(--brown);}
+  .two{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+  .preview{margin-top:8px;width:120px;height:120px;border-radius:14px;object-fit:cover;background:var(--cream-deep);}
+  .check{display:flex;align-items:center;gap:10px;margin-top:18px;font-size:.9rem;}
+  .check input{width:auto;}
+  .actions{display:flex;gap:10px;justify-content:flex-end;margin-top:24px;flex-wrap:wrap;}
+  .hint{font-size:.72rem;color:var(--brown);opacity:.6;margin-top:5px;}
+  @media(max-width:520px){.two{grid-template-columns:1fr;} .row{flex-wrap:wrap;}}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<section class="login" id="loginView">
+  <div class="brand">Juriah<span>Monique Adornments</span></div>
+  <p class="sub">Shop admin — owner login</p>
+  <form id="loginForm">
+    <label for="email">Email</label>
+    <input type="email" id="email" required autocomplete="username">
+    <label for="password">Password</label>
+    <input type="password" id="password" required autocomplete="current-password">
+    <button class="btn" type="submit" id="loginBtn">Sign in</button>
+    <p class="msg" id="loginMsg"></p>
+  </form>
+</section>
+
+<!-- APP -->
+<div id="appView" class="hidden">
+  <header class="bar">
+    <div class="brand">Juriah<span>Monique Adornments · Admin</span></div>
+    <div class="right">
+      <span class="who" id="who"></span>
+      <a class="btn ghost" href="index.html" target="_blank" style="text-decoration:none;display:inline-block;">View shop</a>
+      <button class="btn ghost" id="logoutBtn">Sign out</button>
+    </div>
+  </header>
+  <main>
+    <div class="toolbar">
+      <h1>Products</h1>
+      <button class="btn" id="addBtn">+ Add product</button>
+    </div>
+    <p class="msg" id="listMsg"></p>
+    <div class="list" id="list"></div>
+  </main>
+</div>
+
+<!-- EDIT MODAL -->
+<div class="overlay hidden" id="overlay">
+  <div class="modal">
+    <h2 id="modalTitle">Add product</h2>
+    <form id="productForm">
+      <label for="fName">Name</label>
+      <input id="fName" required maxlength="120">
+
+      <div class="two">
+        <div>
+          <label for="fPrice">Price ($)</label>
+          <input id="fPrice" type="number" step="0.01" min="0" required>
+        </div>
+        <div>
+          <label for="fCategory">Category</label>
+          <select id="fCategory">
+            <option value="necklace">Necklace</option>
+            <option value="bracelet">Bracelet</option>
+            <option value="earring">Earring</option>
+            <option value="ring">Ring</option>
+          </select>
+        </div>
+      </div>
+
+      <label for="fDesc">Description</label>
+      <textarea id="fDesc" rows="3" maxlength="400"></textarea>
+
+      <div class="two">
+        <div>
+          <label for="fBadge">Badge (optional)</label>
+          <input id="fBadge" placeholder="e.g. New, Bestseller" maxlength="20">
+        </div>
+        <div>
+          <label for="fOrder">Display order</label>
+          <input id="fOrder" type="number" step="1" value="0">
+        </div>
+      </div>
+      <p class="hint">Lower display order numbers appear first.</p>
+
+      <label for="fImage">Photo</label>
+      <input id="fImage" type="file" accept="image/*">
+      <img class="preview hidden" id="preview" alt="">
+
+      <label class="check"><input type="checkbox" id="fStock" checked> In stock (untick to show “Sold out”)</label>
+
+      <p class="msg" id="formMsg"></p>
+      <div class="actions">
+        <button type="button" class="btn danger hidden" id="deleteBtn">Delete</button>
+        <button type="button" class="btn ghost" id="cancelBtn">Cancel</button>
+        <button type="submit" class="btn" id="saveBtn">Save</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script src="config.js"></script>
+<script>
+(function(){
+  var sb = supabase.createClient(JD_CONFIG.SUPABASE_URL, JD_CONFIG.SUPABASE_KEY);
+  var BUCKET = 'product-images';
+  var $ = function(id){return document.getElementById(id);};
+  var products = [], editing = null;
+
+  function money(n){ n=Number(n); return '$'+(n%1===0?n:n.toFixed(2)); }
+  function show(el,on){ el.classList.toggle('hidden', !on); }
+
+  /* ---------- auth ---------- */
+  function showApp(session){
+    show($('loginView'), !session); show($('appView'), !!session);
+    if(session){ $('who').textContent = session.user.email; loadProducts(); }
+  }
+  sb.auth.getSession().then(function(r){ showApp(r.data.session); });
+  sb.auth.onAuthStateChange(function(_e, session){ showApp(session); });
+
+  $('loginForm').addEventListener('submit', function(e){
+    e.preventDefault();
+    var b=$('loginBtn'); b.disabled=true; $('loginMsg').textContent='';
+    sb.auth.signInWithPassword({email:$('email').value.trim(), password:$('password').value})
+      .then(function(r){ b.disabled=false; if(r.error){ $('loginMsg').textContent='Incorrect email or password.'; } });
+  });
+  $('logoutBtn').addEventListener('click', function(){ sb.auth.signOut(); });
+
+  /* ---------- list ---------- */
+  function loadProducts(){
+    $('listMsg').textContent='';
+    sb.from('products').select('*').order('sort_order',{ascending:true}).order('created_at',{ascending:true})
+      .then(function(r){
+        if(r.error){ $('listMsg').textContent='Could not load products: '+r.error.message; return; }
+        products=r.data||[]; renderList();
+      });
+  }
+  function renderList(){
+    var list=$('list'); list.textContent='';
+    if(!products.length){ var p=document.createElement('p'); p.className='empty'; p.textContent='No products yet — add your first one.'; list.appendChild(p); return; }
+    products.forEach(function(p){
+      var row=document.createElement('div'); row.className='row';
+      var img=document.createElement('img'); img.src=p.image_url||''; img.alt=''; row.appendChild(img);
+      var info=document.createElement('div'); info.className='info';
+      var n=document.createElement('div'); n.className='name'; n.textContent=p.name; info.appendChild(n);
+      var m=document.createElement('div'); m.className='meta'; m.textContent=money(p.price)+' · '+(p.category||'—');
+      if(p.in_stock===false){ var t=document.createElement('span'); t.className='tag off'; t.textContent='Sold out'; m.appendChild(t); }
+      else if(p.badge){ var t2=document.createElement('span'); t2.className='tag'; t2.textContent=p.badge; m.appendChild(t2); }
+      info.appendChild(m); row.appendChild(info);
+      var eb=document.createElement('button'); eb.className='btn ghost'; eb.textContent='Edit';
+      eb.addEventListener('click', function(){ openForm(p); }); row.appendChild(eb);
+      list.appendChild(row);
+    });
+  }
+
+  /* ---------- form ---------- */
+  function openForm(p){
+    editing=p||null;
+    $('modalTitle').textContent = p ? 'Edit product' : 'Add product';
+    $('fName').value = p?p.name:''; $('fPrice').value = p?p.price:'';
+    $('fCategory').value = p&&p.category ? p.category : 'necklace';
+    $('fDesc').value = p?(p.description||''):''; $('fBadge').value = p?(p.badge||''):'';
+    $('fOrder').value = p?(p.sort_order||0):(products.length?Math.max.apply(null,products.map(function(x){return x.sort_order||0;}))+1:0);
+    $('fStock').checked = p ? p.in_stock!==false : true;
+    $('fImage').value=''; $('formMsg').textContent=''; $('formMsg').className='msg';
+    var pv=$('preview'); if(p&&p.image_url){ pv.src=p.image_url; show(pv,true);} else { show(pv,false); }
+    show($('deleteBtn'), !!p); show($('overlay'), true);
+  }
+  function closeForm(){ show($('overlay'), false); editing=null; }
+  $('addBtn').addEventListener('click', function(){ openForm(null); });
+  $('cancelBtn').addEventListener('click', closeForm);
+  $('overlay').addEventListener('click', function(e){ if(e.target===$('overlay')) closeForm(); });
+  $('fImage').addEventListener('change', function(){
+    var f=this.files[0]; if(f){ var pv=$('preview'); pv.src=URL.createObjectURL(f); show(pv,true); }
+  });
+
+  function uploadImage(file){
+    var ext=(file.name.split('.').pop()||'jpg').toLowerCase().replace(/[^a-z0-9]/g,'');
+    var path = Date.now()+'-'+Math.random().toString(36).slice(2,8)+'.'+ext;
+    return sb.storage.from(BUCKET).upload(path, file, {contentType:file.type, upsert:false}).then(function(r){
+      if(r.error) throw r.error;
+      return sb.storage.from(BUCKET).getPublicUrl(path).data.publicUrl;
+    });
+  }
+
+  $('productForm').addEventListener('submit', function(e){
+    e.preventDefault();
+    var btn=$('saveBtn'), msg=$('formMsg'); btn.disabled=true; msg.className='msg'; msg.textContent='Saving…';
+    var file=$('fImage').files[0];
+    var imgPromise = file ? uploadImage(file) : Promise.resolve(editing?editing.image_url:null);
+    imgPromise.then(function(url){
+      var row={
+        name:$('fName').value.trim(), price:parseFloat($('fPrice').value),
+        category:$('fCategory').value, description:$('fDesc').value.trim(),
+        badge:$('fBadge').value.trim()||null, sort_order:parseInt($('fOrder').value,10)||0,
+        in_stock:$('fStock').checked, image_url:url
+      };
+      return editing ? sb.from('products').update(row).eq('id',editing.id)
+                     : sb.from('products').insert(row);
+    }).then(function(r){
+      btn.disabled=false;
+      if(r.error){ msg.textContent='Could not save: '+r.error.message; return; }
+      closeForm(); loadProducts();
+    }).catch(function(err){ btn.disabled=false; msg.textContent='Could not save: '+(err.message||err); });
+  });
+
+  $('deleteBtn').addEventListener('click', function(){
+    if(!editing) return;
+    if(!confirm('Delete “'+editing.name+'”? This cannot be undone.')) return;
+    sb.from('products').delete().eq('id',editing.id).then(function(r){
+      if(r.error){ $('formMsg').textContent='Could not delete: '+r.error.message; return; }
+      closeForm(); loadProducts();
+    });
+  });
+})();
+</script>
+</body>
+</html>
