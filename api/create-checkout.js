@@ -41,7 +41,7 @@ module.exports = async (req, res) => {
         price_data: {
           currency: "usd",
           unit_amount: Math.round(Number(p.price) * 100),
-          product_data: { name: p.name, ...(img.startsWith("https://") ? { images: [img] } : {}) },
+           product_data: {   name: p.name,   metadata: {     supabase_product_id: String(p.id)   },   ...(img.startsWith("https://") ? { images: [img] } : {}) },
         },
       });
     }
