@@ -2,6 +2,10 @@
 const Stripe = require("stripe");
 const { createClient } = require("@supabase/supabase-js");
 
+const { Resend } = require("resend");
+const resend = new Resend(process.env.RESEND_API_KEY);
+
+
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
 const supabase = createClient(
