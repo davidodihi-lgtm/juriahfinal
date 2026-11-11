@@ -117,6 +117,62 @@ module.exports = async (req, res) => {
         if (inventoryError) throw inventoryError;
       }
 
+      // Send a test order confirmation email
+      const emailTo = process.env.ORDER_TEST_EMAIL;
+
+      if (emailTo) {
+        const orderSummary = items
+          .map(item =>
+            `${item.name} x ${item.quantity}: $${item.amount_total.toFixed(2)}`
+          )
+          .join("\n");
+
+        const { data: claimed, error: claimError } = await supabase
+          .from("orders")
+          .update({ confirmation_email_status: "sending" })
+          .eq("stripe_session_id", session.id)
+          .eq("confirmation_email_status", "pending")
+          .select("stripe_session_id");
+
+        if (claimError) throw claimError;
+
+        if (claimed && claimed.length > 0) {
+          try {
+            const { error: emailError } = await resend.emails.send({
+              from: "Juriah Monique Adornments <onboarding@resend.dev>",
+              to: [emailTo],
+              subject: "New Test Order - Juriah Monique Adornments",
+              text: [
+                "A payment was completed successfully!",
+                "",
+                `Order: ${session.id}`,
+                `Customer: ${session.customer_details?.email || "Not provided"}`,
+                "",
+                "Items:",
+                orderSummary,
+                "",
+                `Total: $${(session.amount_total / 100).toFixed(2)}`
+              ].join("\n")
+            });
+
+            if (emailError) throw emailError;
+
+            await supabase
+              .from("orders")
+              .update({ confirmation_email_status: "sent" })
+              .eq("stripe_session_id", session.id);
+
+          } catch (emailError) {
+            console.error("Resend email error:", emailError.message);
+
+            await supabase
+              .from("orders")
+              .update({ confirmation_email_status: "failed" })
+              .eq("stripe_session_id", session.id);
+          }
+        }
+      }
+
     }
 
     return res.status(200).json({ received: true });
