@@ -1,17 +1,117 @@
 
 const Stripe = require("stripe");
 const { createClient } = require("@supabase/supabase-js");
-
 const { Resend } = require("resend");
-const resend = new Resend(process.env.RESEND_API_KEY);
-
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 const supabase = createClient(
   process.env.SUPABASE_URL,
   process.env.SUPABASE_SECRET_KEY
 );
+
+async function sendOrderEmail({
+  session,
+  items,
+  shipping,
+  statusColumn,
+  subject,
+  message
+}) {
+  const emailTo = process.env.ORDER_TEST_EMAIL;
+  if (!emailTo) {
+    console.error("ORDER_TEST_EMAIL is missing");
+    return;
+  }
+
+  // Claim this email so repeated Stripe events do not
+  // normally send the same notification again.
+  const { data: claimed, error: claimError } = await supabase
+    .from("orders")
+    .update({ [statusColumn]: "sending" })
+    .eq("stripe_session_id", session.id)
+    .eq(statusColumn, "pending")
+    .select("stripe_session_id");
+
+  if (claimError) {
+    console.error("Email claim error:", claimError.message);
+    return;
+  }
+
+  if (!claimed || claimed.length === 0) return;
+
+  const currency = (session.currency || "usd").toUpperCase();
+  const money = amount =>
+    new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency
+    }).format(amount / 100);
+
+  const orderSummary = items
+    .map(item =>
+      `${item.name} x ${item.quantity}: ${money(item.amount_total * 100)}`
+    )
+    .join("\n");
+
+  const address = shipping?.address;
+  const shippingText = address
+    ? [
+        shipping.name || "",
+        address.line1,
+        address.line2,
+        [address.city, address.state, address.postal_code]
+          .filter(Boolean).join(", "),
+        address.country
+      ].filter(Boolean).join("\n")
+    : "Not provided";
+
+  try {
+    const { error: emailError } = await resend.emails.send({
+      from: "Juriah Monique Adornments <onboarding@resend.dev>",
+      to: [emailTo],
+      subject,
+      text: [
+        message,
+        "",
+        `Order: ${session.id}`,
+        `Customer: ${session.customer_details?.name || "Not provided"}`,
+        `Email: ${session.customer_details?.email || session.customer_email || "Not provided"}`,
+        "",
+        "Items:",
+        orderSummary,
+        "",
+        `Total paid: ${money(session.amount_total || 0)}`,
+        "",
+        "Shipping address:",
+        shippingText
+      ].join("\n")
+    });
+
+    if (emailError) throw emailError;
+
+    const { error: updateError } = await supabase
+      .from("orders")
+      .update({ [statusColumn]: "sent" })
+      .eq("stripe_session_id", session.id);
+
+    if (updateError) {
+      console.error("Email status update error:", updateError.message);
+    }
+
+  } catch (emailError) {
+    console.error("Resend email error:", emailError.message);
+
+    const { error: updateError } = await supabase
+      .from("orders")
+      .update({ [statusColumn]: "failed" })
+      .eq("stripe_session_id", session.id);
+
+    if (updateError) {
+      console.error("Email failure status error:", updateError.message);
+    }
+  }
+}
 
 module.exports = async (req, res) => {
   if (req.method !== "POST") {
@@ -51,7 +151,8 @@ module.exports = async (req, res) => {
       }
 
       const lineItems = await stripe.checkout.sessions.listLineItems(
-        session.id
+        session.id,
+        { limit: 100 }
       );
 
       const items = lineItems.data.map(item => ({
@@ -85,15 +186,14 @@ module.exports = async (req, res) => {
         });
 
       if (error) throw error;
-      
+
+      // Preserve automatic inventory tracking
       if (process.env.INVENTORY_TRACKING_ENABLED === "true") {
         const inventoryItems = [];
 
         for (const item of lineItems.data) {
           const productId = item.price?.product;
-
           const product = await stripe.products.retrieve(productId);
-
           const supabaseId = product.metadata?.supabase_product_id;
 
           if (!supabaseId) {
@@ -117,69 +217,36 @@ module.exports = async (req, res) => {
         if (inventoryError) throw inventoryError;
       }
 
-      // Send a test order confirmation email
-      const emailTo = process.env.ORDER_TEST_EMAIL;
+      // Email 1: Customer confirmation (test Gmail)
+      await sendOrderEmail({
+        session,
+        items,
+        shipping,
+        statusColumn: "confirmation_email_status",
+        subject: "Order Confirmation - Juriah Monique Adornments",
+        message:
+          "Thank you for your order! Your payment was received successfully."
+      });
 
-      if (emailTo) {
-        const orderSummary = items
-          .map(item =>
-            `${item.name} x ${item.quantity}: $${item.amount_total.toFixed(2)}`
-          )
-          .join("\n");
-
-        const { data: claimed, error: claimError } = await supabase
-          .from("orders")
-          .update({ confirmation_email_status: "sending" })
-          .eq("stripe_session_id", session.id)
-          .eq("confirmation_email_status", "pending")
-          .select("stripe_session_id");
-
-        if (claimError) throw claimError;
-
-        if (claimed && claimed.length > 0) {
-          try {
-            const { error: emailError } = await resend.emails.send({
-              from: "Juriah Monique Adornments <onboarding@resend.dev>",
-              to: [emailTo],
-              subject: "New Test Order - Juriah Monique Adornments",
-              text: [
-                "A payment was completed successfully!",
-                "",
-                `Order: ${session.id}`,
-                `Customer: ${session.customer_details?.email || "Not provided"}`,
-                "",
-                "Items:",
-                orderSummary,
-                "",
-                `Total: $${(session.amount_total / 100).toFixed(2)}`
-              ].join("\n")
-            });
-
-            if (emailError) throw emailError;
-
-            await supabase
-              .from("orders")
-              .update({ confirmation_email_status: "sent" })
-              .eq("stripe_session_id", session.id);
-
-          } catch (emailError) {
-            console.error("Resend email error:", emailError.message);
-
-            await supabase
-              .from("orders")
-              .update({ confirmation_email_status: "failed" })
-              .eq("stripe_session_id", session.id);
-          }
-        }
-      }
-
+      // Email 2: Business owner notification (test Gmail)
+      await sendOrderEmail({
+        session,
+        items,
+        shipping,
+        statusColumn: "owner_email_status",
+        subject: "New Order Received - Juriah Monique Adornments",
+        message:
+          "A customer has placed and paid for a new order."
+      });
     }
 
     return res.status(200).json({ received: true });
 
   } catch (error) {
     console.error("Stripe webhook error:", error.message);
-    return res.status(400).json({ error: "Webhook processing failed" });
+    return res.status(400).json({
+      error: "Webhook processing failed"
+    });
   }
 };
 
