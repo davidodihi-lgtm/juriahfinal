@@ -81,6 +81,38 @@ module.exports = async (req, res) => {
         });
 
       if (error) throw error;
+      
+      if (process.env.INVENTORY_TRACKING_ENABLED === "true") {
+        const inventoryItems = [];
+
+        for (const item of lineItems.data) {
+          const productId = item.price?.product;
+
+          const product = await stripe.products.retrieve(productId);
+
+          const supabaseId = product.metadata?.supabase_product_id;
+
+          if (!supabaseId) {
+            throw new Error("Missing Supabase product ID");
+          }
+
+          inventoryItems.push({
+            product_id: supabaseId,
+            quantity: item.quantity
+          });
+        }
+
+        const { error: inventoryError } = await supabase.rpc(
+          "deduct_order_inventory",
+          {
+            p_session_id: session.id,
+            p_items: inventoryItems
+          }
+        );
+
+        if (inventoryError) throw inventoryError;
+      }
+
     }
 
     return res.status(200).json({ received: true });
