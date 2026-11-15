@@ -58,6 +58,63 @@
   .actions{display:flex;gap:10px;justify-content:flex-end;margin-top:24px;flex-wrap:wrap;}
   .hint{font-size:.72rem;color:var(--brown);opacity:.6;margin-top:5px;}
   @media(max-width:520px){.two{grid-template-columns:1fr;} .row{flex-wrap:wrap;}}
+  /* STORE DASHBOARD */
+#dashboardHome h1 {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 2.5rem;
+  color: var(--brown);
+  margin-bottom: 25px;
+}
+
+.dashboardGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px;
+}
+
+.dashboardCard {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 15px;
+  padding: 30px;
+  min-height: 190px;
+  background: var(--blush-pale);
+  border: 1px solid var(--gold);
+  border-radius: 20px;
+  text-align: left;
+  color: var(--brown);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.dashboardCard:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 20px rgba(107,80,64,0.12);
+}
+
+.dashboardCard .cardIcon {
+  font-size: 2rem;
+  color: var(--blush-deep);
+}
+
+.dashboardCard strong {
+  font-size: 1.5rem;
+  font-weight: 500;
+}
+
+.dashboardCard span:last-child {
+  font-size: 0.9rem;
+}
+
+.dashboardPage > .backDashboard {
+  margin-bottom: 25px;
+}
+
+@media (max-width: 600px) {
+  .dashboardGrid {
+    grid-template-columns: 1fr;
+  }
+}
 </style>
 </head>
 <body>
@@ -77,35 +134,88 @@
 </section>
 
 <!-- APP -->
+
 <div id="appView" class="hidden">
   <header class="bar">
     <div class="brand">Juriah<span>Monique Adornments · Admin</span></div>
     <div class="right">
       <span class="who" id="who"></span>
-      <a class="btn ghost" href="index.html" target="_blank" style="text-decoration:none;display:inline-block;">View shop</a>
+      <a class="btn ghost" href="index.html" target="_blank"
+         style="text-decoration:none;display:inline-block;">View shop</a>
       <button class="btn ghost" id="logoutBtn">Sign out</button>
     </div>
   </header>
+
   <main>
-    <div class="toolbar">
-      <h1>Products</h1>
-      <button class="btn" id="addBtn">+ Add product</button>
-    </div>
-    <p class="msg" id="listMsg"></p>
-    <div class="list" id="list"></div>
-    <!-- CUSTOMER ORDERS -->
-<section id="ordersSection" style="margin-top:45px;">
-  <div class="toolbar">
-    <h1>Customer Orders</h1>
-    <button class="btn ghost" id="refreshOrdersBtn">
-      Refresh Orders
-    </button>
-  </div>
-  <p class="msg" id="ordersMsg"></p>
-  <div class="list" id="ordersList"></div>
-</section>
+    <section id="dashboardHome">
+      <h1>Store Dashboard</h1>
+      <div class="dashboardGrid">
+        <button type="button" class="dashboardCard" data-section="productsSection">
+          <span class="cardIcon">◇</span>
+          <strong>Products</strong>
+          <span>Manage products</span>
+        </button>
+
+        <button type="button" class="dashboardCard" data-section="inventorySection">
+          <span class="cardIcon">▣</span>
+          <strong>Inventory</strong>
+          <span>Update stock</span>
+        </button>
+
+        <button type="button" class="dashboardCard" data-section="ordersSection">
+          <span class="cardIcon">▢</span>
+          <strong>Orders</strong>
+          <span>View orders</span>
+        </button>
+
+        <button type="button" class="dashboardCard" data-section="photosSection">
+          <span class="cardIcon">▧</span>
+          <strong>Photos</strong>
+          <span>Upload images</span>
+        </button>
+      </div>
+    </section>
+
+    <section id="productsSection" class="dashboardPage hidden">
+      <button type="button" class="btn ghost backDashboard">← Dashboard</button>
+      <div class="toolbar">
+        <h1>Products</h1>
+        <button class="btn" id="addBtn">+ Add product</button>
+      </div>
+      <p class="msg" id="listMsg"></p>
+      <div class="list" id="list"></div>
+    </section>
+
+    <section id="inventorySection" class="dashboardPage hidden">
+      <button type="button" class="btn ghost backDashboard">← Dashboard</button>
+      <h1>Inventory</h1>
+      <p>Manage stock quantities through the product editor.</p>
+      <button type="button" class="btn" id="inventoryProductsBtn">
+        Manage Product Stock
+      </button>
+    </section>
+
+    <section id="ordersSection" class="dashboardPage hidden">
+      <button type="button" class="btn ghost backDashboard">← Dashboard</button>
+      <div class="toolbar">
+        <h1>Customer Orders</h1>
+        <button class="btn ghost" id="refreshOrdersBtn">Refresh Orders</button>
+      </div>
+      <p class="msg" id="ordersMsg"></p>
+      <div class="list" id="ordersList"></div>
+    </section>
+
+    <section id="photosSection" class="dashboardPage hidden">
+      <button type="button" class="btn ghost backDashboard">← Dashboard</button>
+      <h1>Product Photos</h1>
+      <p>Upload or replace photos through the product editor.</p>
+      <button type="button" class="btn" id="photoProductsBtn">
+        Manage Product Photos
+      </button>
+    </section>
   </main>
 </div>
+
 
 <!-- EDIT MODAL -->
 <div class="overlay hidden" id="overlay">
@@ -178,7 +288,33 @@
   function showApp(session){
     show($('loginView'), !session); show($('appView'), !!session);
     if(session){   $('who').textContent = session.user.email;   loadProducts();   loadOrders(); }
+  }async function showApp(session) {
+  show($('loginView'), true);
+  show($('appView'), false);
+
+  if (!session) return;
+
+  const { data, error } = await sb
+    .from('admin_users')
+    .select('user_id')
+    .eq('user_id', session.user.id)
+    .maybeSingle();
+
+  if (error || !data) {
+    $('loginMsg').textContent =
+      'This account does not have administrator access.';
+    return;
   }
+
+  $('loginMsg').textContent = '';
+  $('who').textContent = session.user.email;
+
+  show($('loginView'), false);
+  show($('appView'), true);
+
+  loadProducts();
+  loadOrders();
+}
   sb.auth.getSession().then(function(r){ showApp(r.data.session); });
   sb.auth.onAuthStateChange(function(_e, session){ showApp(session); });
 
@@ -347,9 +483,40 @@ card.appendChild(details);
       closeForm(); loadProducts();
     });
   });
-  $('refreshOrdersBtn').addEventListener('click', function(){
-  loadOrders();
+  $('refreshOrdersBtn').addEventListener('click', function(){   loadOrders(); });  function openDashboardSection(sectionId) {
+  $('dashboardHome').classList.add('hidden');
+
+  document.querySelectorAll('.dashboardPage').forEach(function(page) {
+    page.classList.add('hidden');
+  });
+
+  $(sectionId).classList.remove('hidden');
+}
+
+document.querySelectorAll('.dashboardCard').forEach(function(card) {
+  card.addEventListener('click', function() {
+    openDashboardSection(card.dataset.section);
+  });
 });
+
+document.querySelectorAll('.backDashboard').forEach(function(button) {
+  button.addEventListener('click', function() {
+    document.querySelectorAll('.dashboardPage').forEach(function(page) {
+      page.classList.add('hidden');
+    });
+
+    $('dashboardHome').classList.remove('hidden');
+  });
+});
+
+$('inventoryProductsBtn').addEventListener('click', function() {
+  openDashboardSection('productsSection');
+});
+
+$('photoProductsBtn').addEventListener('click', function() {
+  openDashboardSection('productsSection');
+});
+  
 })();
 </script>
 </body>
