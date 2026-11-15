@@ -115,6 +115,39 @@
     grid-template-columns: 1fr;
   }
 }
+  /* DASHBOARD OVERVIEW */
+.overviewGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+  margin: 20px 0 30px;
+}
+
+.overviewCard {
+  background: var(--cream);
+  border: 1px solid var(--gold);
+  border-radius: 16px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.overviewCard span {
+  color: var(--brown);
+  font-size: 0.85rem;
+}
+
+.overviewCard strong {
+  color: var(--blush-deep);
+  font-size: 1.8rem;
+}
+
+@media (max-width: 700px) {
+  .overviewGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
 </style>
 </head>
 <body>
@@ -149,6 +182,28 @@
   <main>
     <section id="dashboardHome">
       <h1>Store Dashboard</h1>
+      <!-- DASHBOARD OVERVIEW -->
+<div class="overviewGrid">
+  <div class="overviewCard">
+    <span>Total Products</span>
+    <strong id="totalProducts">—</strong>
+  </div>
+
+  <div class="overviewCard">
+    <span>Total Orders</span>
+    <strong id="totalOrders">—</strong>
+  </div>
+
+  <div class="overviewCard">
+    <span>Total Sales</span>
+    <strong id="totalSales">—</strong>
+  </div>
+
+  <div class="overviewCard">
+    <span>Low Stock</span>
+    <strong id="lowStock">—</strong>
+  </div>
+</div>
       <div class="dashboardGrid">
         <button type="button" class="dashboardCard" data-section="productsSection">
           <span class="cardIcon">◇</span>
@@ -325,6 +380,7 @@
 
   loadProducts();
   loadOrders();
+  loadDashboardStats();
 }
   sb.auth.getSession().then(function(r){ showApp(r.data.session); });
   sb.auth.onAuthStateChange(function(_e, session){ showApp(session); });
@@ -346,6 +402,65 @@
         products=r.data||[]; renderList();
       });
   }
+  
+async function loadDashboardStats() {
+  var ids = ['totalProducts', 'totalOrders', 'totalSales', 'lowStock'];
+
+  ids.forEach(function(id) {
+    $(id).textContent = '...';
+  });
+
+  try {
+    var results = await Promise.all([
+      sb.from('products')
+        .select('id,stock_quantity'),
+      sb.from('orders')
+        .select('amount_total,currency,status')
+    ]);
+
+    var productResult = results[0];
+    var orderResult = results[1];
+
+    if (productResult.error) throw productResult.error;
+    if (orderResult.error) throw orderResult.error;
+
+    var allProducts = productResult.data || [];
+    var allOrders = orderResult.data || [];
+
+    var paidOrders = allOrders.filter(function(order) {
+      return order.status === 'paid';
+    });
+
+    var totalSales = paidOrders
+      .filter(function(order) {
+        return (order.currency || 'usd').toLowerCase() === 'usd';
+      })
+      .reduce(function(total, order) {
+        return total + Number(order.amount_total || 0);
+      }, 0);
+
+    var lowStock = allProducts.filter(function(product) {
+      var quantity = Number(product.stock_quantity);
+      return Number.isFinite(quantity) &&
+        quantity >= 0 && quantity <= 5;
+    }).length;
+
+    $('totalProducts').textContent = allProducts.length;
+    $('totalOrders').textContent = paidOrders.length;
+    $('totalSales').textContent = new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD'
+    }).format(totalSales);
+    $('lowStock').textContent = lowStock;
+
+  } catch (error) {
+    ids.forEach(function(id) {
+      $(id).textContent = '—';
+    });
+    console.error('Dashboard statistics error:', error);
+  }
+}
+
   function loadInventory() {
   $('inventoryMsg').textContent = 'Loading inventory...';
   $('inventoryList').textContent = '';
