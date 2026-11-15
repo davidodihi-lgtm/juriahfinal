@@ -187,13 +187,20 @@
     </section>
 
     <section id="inventorySection" class="dashboardPage hidden">
-      <button type="button" class="btn ghost backDashboard">← Dashboard</button>
-      <h1>Inventory</h1>
-      <p>Manage stock quantities through the product editor.</p>
-      <button type="button" class="btn" id="inventoryProductsBtn">
-        Manage Product Stock
-      </button>
-    </section>
+  <button type="button" class="btn ghost backDashboard">
+    ← Dashboard
+  </button>
+
+  <div class="toolbar">
+    <h1>Inventory Management</h1>
+    <button type="button" class="btn ghost" id="refreshInventoryBtn">
+      Refresh Inventory
+    </button>
+  </div>
+
+  <p class="msg" id="inventoryMsg"></p>
+  <div class="list" id="inventoryList"></div>
+</section>
 
     <section id="ordersSection" class="dashboardPage hidden">
       <button type="button" class="btn ghost backDashboard">← Dashboard</button>
@@ -332,6 +339,87 @@
         products=r.data||[]; renderList();
       });
   }
+  function loadInventory() {
+  $('inventoryMsg').textContent = 'Loading inventory...';
+  $('inventoryList').textContent = '';
+
+  sb.from('products')
+    .select('id,name,stock_quantity,in_stock,image_url')
+    .order('name', { ascending: true })
+    .then(function(r) {
+      if (r.error) {
+        $('inventoryMsg').textContent =
+          'Could not load inventory: ' + r.error.message;
+        return;
+      }
+
+      var items = r.data || [];
+      $('inventoryMsg').textContent =
+        items.length ? items.length + ' products found' : 'No products found';
+
+      items.forEach(function(p) {
+        var row = document.createElement('div');
+        row.className = 'row';
+
+        var info = document.createElement('div');
+        info.className = 'info';
+
+        var name = document.createElement('div');
+        name.className = 'name';
+        name.textContent = p.name;
+        info.appendChild(name);
+
+        var quantity = document.createElement('input');
+        quantity.type = 'number';
+        quantity.min = '0';
+        quantity.step = '1';
+        quantity.value = p.stock_quantity ?? 0;
+        quantity.style.width = '90px';
+        quantity.setAttribute('aria-label', 'Stock quantity for ' + p.name);
+
+        var save = document.createElement('button');
+        save.className = 'btn';
+        save.textContent = 'Save Stock';
+
+        save.addEventListener('click', function() {
+          var qty = Number(quantity.value);
+
+          if (!Number.isSafeInteger(qty) || qty < 0) {
+            $('inventoryMsg').textContent =
+              'Enter a valid whole-number stock quantity.';
+            return;
+          }
+
+          save.disabled = true;
+
+          sb.from('products')
+            .update({
+              stock_quantity: qty,
+              in_stock: qty > 0
+            })
+            .eq('id', p.id)
+            .then(function(result) {
+              save.disabled = false;
+
+              if (result.error) {
+                $('inventoryMsg').textContent =
+                  'Could not update stock: ' + result.error.message;
+                return;
+              }
+
+              $('inventoryMsg').textContent =
+                p.name + ' stock updated successfully.';
+              loadProducts();
+            });
+        });
+
+        row.appendChild(info);
+        row.appendChild(quantity);
+        row.appendChild(save);
+        $('inventoryList').appendChild(row);
+      });
+    });
+}
   function loadOrders(){
   $('ordersMsg').textContent = 'Loading orders...';
 
@@ -496,6 +584,7 @@ function openDashboardSection(sectionId) {
 document.querySelectorAll('.dashboardCard').forEach(function(card) {
   card.addEventListener('click', function() {
     openDashboardSection(card.dataset.section);
+    if (card.dataset.section === 'inventorySection') loadInventory();
   });
 });
 
@@ -509,8 +598,8 @@ document.querySelectorAll('.backDashboard').forEach(function(button) {
   });
 });
 
-$('inventoryProductsBtn').addEventListener('click', function() {
-  openDashboardSection('productsSection');
+$('refreshInventoryBtn').addEventListener('click', function() {
+  loadInventory();
 });
 
 $('photoProductsBtn').addEventListener('click', function() {
