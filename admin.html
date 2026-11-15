@@ -212,14 +212,21 @@
       <div class="list" id="ordersList"></div>
     </section>
 
-    <section id="photosSection" class="dashboardPage hidden">
-      <button type="button" class="btn ghost backDashboard">← Dashboard</button>
-      <h1>Product Photos</h1>
-      <p>Upload or replace photos through the product editor.</p>
-      <button type="button" class="btn" id="photoProductsBtn">
-        Manage Product Photos
-      </button>
-    </section>
+  <section id="photosSection" class="dashboardPage hidden">
+  <button type="button" class="btn ghost backDashboard">
+    ← Dashboard
+  </button>
+
+  <div class="toolbar">
+    <h1>Photos Management</h1>
+    <button type="button" class="btn ghost" id="refreshPhotosBtn">
+      Refresh Photos
+    </button>
+  </div>
+
+  <p class="msg" id="photosMsg"></p>
+  <div class="list" id="photosList"></div>
+</section>
   </main>
 </div>
 
@@ -489,6 +496,105 @@ details.textContent =
       });
     });
 }
+  
+function loadPhotos() {
+  $('photosMsg').textContent = 'Loading photos...';
+  $('photosList').textContent = '';
+
+  sb.from('products')
+    .select('id,name,image_url')
+    .order('name', { ascending: true })
+    .then(function(r) {
+      if (r.error) {
+        $('photosMsg').textContent =
+          'Could not load photos: ' + r.error.message;
+        return;
+      }
+
+      var items = r.data || [];
+      $('photosMsg').textContent =
+        items.length ? items.length + ' products found' : 'No products found';
+
+      items.forEach(function(p) {
+        var row = document.createElement('div');
+        row.className = 'row';
+
+        var img = document.createElement('img');
+        img.src = p.image_url || '';
+        img.alt = p.name;
+        row.appendChild(img);
+
+        var info = document.createElement('div');
+        info.className = 'info';
+
+        var name = document.createElement('div');
+        name.className = 'name';
+        name.textContent = p.name;
+        info.appendChild(name);
+        row.appendChild(info);
+
+        var fileInput = document.createElement('input');
+        fileInput.type = 'file';
+        fileInput.accept = 'image/*';
+        fileInput.style.maxWidth = '190px';
+        fileInput.setAttribute('aria-label', 'Choose photo for ' + p.name);
+
+        var save = document.createElement('button');
+        save.className = 'btn';
+        save.textContent = 'Upload Photo';
+
+        save.addEventListener('click', function() {
+          var file = fileInput.files[0];
+
+          if (!file) {
+            $('photosMsg').textContent = 'Please select a photo first.';
+            return;
+          }
+
+          if (!file.type.startsWith('image/')) {
+            $('photosMsg').textContent = 'Please select a valid image.';
+            return;
+          }
+
+          save.disabled = true;
+          $('photosMsg').textContent = 'Uploading photo...';
+
+          uploadImage(file)
+            .then(function(url) {
+              return sb.from('products')
+                .update({ image_url: url })
+                .eq('id', p.id);
+            })
+            .then(function(result) {
+              save.disabled = false;
+
+              if (result.error) {
+                $('photosMsg').textContent =
+                  'Could not save photo: ' + result.error.message;
+                return;
+              }
+
+              
+
+              loadPhotos();
+              loadProducts();
+              $('photosMsg').textContent =
+                p.name + ' photo updated successfully.';
+            })
+            .catch(function(err) {
+              save.disabled = false;
+              $('photosMsg').textContent =
+                'Upload failed: ' + (err.message || err);
+            });
+        });
+
+        row.appendChild(fileInput);
+        row.appendChild(save);
+        $('photosList').appendChild(row);
+      });
+    });
+}
+
   function renderList(){
     var list=$('list'); list.textContent='';
     if(!products.length){ var p=document.createElement('p'); p.className='empty'; p.textContent='No products yet — add your first one.'; list.appendChild(p); return; }
@@ -585,6 +691,7 @@ document.querySelectorAll('.dashboardCard').forEach(function(card) {
   card.addEventListener('click', function() {
     openDashboardSection(card.dataset.section);
     if (card.dataset.section === 'inventorySection') loadInventory();
+    if (card.dataset.section === 'photosSection') loadPhotos();
   });
 });
 
@@ -602,8 +709,8 @@ $('refreshInventoryBtn').addEventListener('click', function() {
   loadInventory();
 });
 
-$('photoProductsBtn').addEventListener('click', function() {
-  openDashboardSection('productsSection');
+$('refreshPhotosBtn').addEventListener('click', function() {
+  loadPhotos();
 });
   
 })();
