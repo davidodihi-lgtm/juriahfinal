@@ -222,14 +222,47 @@
         var card = document.createElement('div');
         card.className = 'item';
 
-        var details = document.createElement('div');
-        details.style.whiteSpace = 'pre-line';
-        details.textContent =
-          'Order: ' + (order.id || 'N/A') + '\n' +
-          'Status: ' + (order.status || 'N/A') + '\n' +
-          'Date: ' + (order.created_at
-            ? new Date(order.created_at).toLocaleString()
-            : 'N/A');
+      var details = document.createElement('div');
+details.style.whiteSpace = 'pre-line';
+
+var address = order.shipping_address || {};
+if (typeof address === 'string') {
+  try { address = JSON.parse(address); }
+  catch(e) { address = {}; }
+}
+
+var items = order.items || [];
+if (typeof items === 'string') {
+  try { items = JSON.parse(items); }
+  catch(e) { items = []; }
+}
+
+var itemText = Array.isArray(items)
+  ? items.map(function(item){
+      return (item.name || 'Product') +
+        ' × ' + (item.quantity || 1);
+    }).join(', ')
+  : 'N/A';
+
+details.textContent =
+  'Order: ' + (order.id || 'N/A') + '\n' +
+  'Customer: ' + (order.customer_name || 'N/A') + '\n' +
+  'Email: ' + (order.customer_email || 'N/A') + '\n' +
+  'Items: ' + (itemText || 'N/A') + '\n' +
+  'Shipping Address: ' +
+    [address.line1, address.line2, address.city,
+     address.state, address.postal_code, address.country]
+      .filter(Boolean).join(', ') + '\n' +
+  'Total: ' + new Intl.NumberFormat('en-US', {
+  style: 'currency',
+  currency: (order.currency || 'USD').toUpperCase()
+}).format(Number(order.amount_total || 0)) + '\n' +
+  'Status: ' + (order.status || 'N/A') + '\n' +
+  'Date: ' + (order.created_at
+    ? new Date(order.created_at).toLocaleString()
+    : 'N/A');
+
+card.appendChild(details);
 
         card.appendChild(details);
         $('ordersList').appendChild(card);
