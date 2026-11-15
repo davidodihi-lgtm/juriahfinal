@@ -285,10 +285,7 @@
   function show(el,on){ el.classList.toggle('hidden', !on); }
 
   /* ---------- auth ---------- */
-  function showApp(session){
-    show($('loginView'), !session); show($('appView'), !!session);
-    if(session){   $('who').textContent = session.user.email;   loadProducts();   loadOrders(); }
-  }async function showApp(session) {
+  async function showApp(session) {
   show($('loginView'), true);
   show($('appView'), false);
 
@@ -398,7 +395,6 @@ details.textContent =
     ? new Date(order.created_at).toLocaleString()
     : 'N/A');
 
-card.appendChild(details);
 
         card.appendChild(details);
         $('ordersList').appendChild(card);
@@ -483,7 +479,11 @@ card.appendChild(details);
       closeForm(); loadProducts();
     });
   });
-  $('refreshOrdersBtn').addEventListener('click', function(){   loadOrders(); });  function openDashboardSection(sectionId) {
+  $('refreshOrdersBtn').addEventListener('click', function() {
+  loadOrders();
+});
+
+function openDashboardSection(sectionId) {
   $('dashboardHome').classList.add('hidden');
 
   document.querySelectorAll('.dashboardPage').forEach(function(page) {
