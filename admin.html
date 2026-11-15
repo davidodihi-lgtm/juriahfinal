@@ -93,6 +93,17 @@
     </div>
     <p class="msg" id="listMsg"></p>
     <div class="list" id="list"></div>
+    <!-- CUSTOMER ORDERS -->
+<section id="ordersSection" style="margin-top:45px;">
+  <div class="toolbar">
+    <h1>Customer Orders</h1>
+    <button class="btn ghost" id="refreshOrdersBtn">
+      Refresh Orders
+    </button>
+  </div>
+  <p class="msg" id="ordersMsg"></p>
+  <div class="list" id="ordersList"></div>
+</section>
   </main>
 </div>
 
@@ -166,7 +177,7 @@
   /* ---------- auth ---------- */
   function showApp(session){
     show($('loginView'), !session); show($('appView'), !!session);
-    if(session){ $('who').textContent = session.user.email; loadProducts(); }
+    if(session){   $('who').textContent = session.user.email;   loadProducts();   loadOrders(); }
   }
   sb.auth.getSession().then(function(r){ showApp(r.data.session); });
   sb.auth.onAuthStateChange(function(_e, session){ showApp(session); });
@@ -188,6 +199,43 @@
         products=r.data||[]; renderList();
       });
   }
+  function loadOrders(){
+  $('ordersMsg').textContent = 'Loading orders...';
+
+  sb.from('orders')
+    .select('*')
+    .order('created_at', {ascending:false})
+    .then(function(r){
+      if(r.error){
+        $('ordersMsg').textContent =
+          'Could not load orders: ' + r.error.message;
+        return;
+      }
+
+      var orders = r.data || [];
+      $('ordersMsg').textContent =
+        orders.length ? orders.length + ' orders found' : 'No orders yet';
+
+      $('ordersList').textContent = '';
+
+      orders.forEach(function(order){
+        var card = document.createElement('div');
+        card.className = 'item';
+
+        var details = document.createElement('div');
+        details.style.whiteSpace = 'pre-line';
+        details.textContent =
+          'Order: ' + (order.id || 'N/A') + '\n' +
+          'Status: ' + (order.status || 'N/A') + '\n' +
+          'Date: ' + (order.created_at
+            ? new Date(order.created_at).toLocaleString()
+            : 'N/A');
+
+        card.appendChild(details);
+        $('ordersList').appendChild(card);
+      });
+    });
+}
   function renderList(){
     var list=$('list'); list.textContent='';
     if(!products.length){ var p=document.createElement('p'); p.className='empty'; p.textContent='No products yet — add your first one.'; list.appendChild(p); return; }
@@ -266,6 +314,9 @@
       closeForm(); loadProducts();
     });
   });
+  $('refreshOrdersBtn').addEventListener('click', function(){
+  loadOrders();
+});
 })();
 </script>
 </body>
