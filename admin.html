@@ -492,6 +492,47 @@ details.textContent =
 
 
         card.appendChild(details);
+        var statusLabel = document.createElement('label');
+statusLabel.textContent = 'Shipping Status: ';
+
+var statusSelect = document.createElement('select');
+
+['pending', 'processing', 'shipped', 'delivered'].forEach(function(status) {
+  var option = document.createElement('option');
+  option.value = status;
+  option.textContent = status.charAt(0).toUpperCase() + status.slice(1);
+  statusSelect.appendChild(option);
+});
+
+statusSelect.value = order.fulfillment_status || 'pending';
+
+var saveStatusBtn = document.createElement('button');
+saveStatusBtn.type = 'button';
+saveStatusBtn.className = 'btn';
+saveStatusBtn.textContent = 'Update Status';
+
+saveStatusBtn.addEventListener('click', function() {
+  saveStatusBtn.disabled = true;
+
+  sb.from('orders')
+    .update({ fulfillment_status: statusSelect.value })
+    .eq('id', order.id)
+    .then(function(result) {
+      saveStatusBtn.disabled = false;
+
+      if (result.error) {
+        $('ordersMsg').textContent =
+          'Could not update status: ' + result.error.message;
+        return;
+      }
+
+      $('ordersMsg').textContent = 'Shipping status updated successfully.';
+    });
+});
+
+card.appendChild(statusLabel);
+card.appendChild(statusSelect);
+card.appendChild(saveStatusBtn);
         $('ordersList').appendChild(card);
       });
     });
