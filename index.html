@@ -383,6 +383,41 @@
     .product-grid{grid-template-columns:repeat(2, 1fr); gap:14px;}
     .chain-row{padding-bottom:20px;}
     .charm-chain .link-line{display:none;}
+    
+/* Fit navigation within phone screen */
+.chain-row {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 12px 14px;
+  gap: 8px;
+}
+
+.brandmark {
+  font-size: 1.5rem;
+  min-width: 0;
+  flex-shrink: 1;
+}
+
+.brandmark span {
+  font-size: 0.48rem;
+  letter-spacing: 0.12em;
+}
+
+.charm-chain {
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.charm-search {
+  padding: 5px;
+}
+
+.charm-cart {
+  padding: 8px;
+}
+.shopDropdown {
+  display: none !important;
+}
   }
 
   @media (prefers-reduced-motion: reduce){
