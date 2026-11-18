@@ -448,12 +448,105 @@
   }
 }
 
+/* MOBILE HAMBURGER BUTTON */
+.mobileMenuBtn {
+  display: none;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 10px;
+  flex-direction: column;
+  gap: 5px;
+  z-index: 1001;
+}
+
+.mobileMenuBtn span {
+  display: block;
+  width: 23px;
+  height: 2px;
+  background: #6B5040;
+  border-radius: 2px;
+}
+
+@media (max-width: 880px) {
+  .mobileMenuBtn {
+    display: flex;
+    flex-shrink: 0;
+  }
+}
+
+/* MOBILE NAVIGATION PANEL */
+.mobileMenu {
+  display: none;
+}
+
+.mobileMenu[hidden] {
+  display: none !important;
+}
+
+@media (max-width: 880px) {
+  .mobileMenu:not([hidden]) {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 20px 24px;
+    background: #FAF3EA;
+    border-top: 1px solid #C6A15B;
+    box-shadow: 0 12px 25px rgba(74, 59, 54, 0.12);
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    z-index: 1000;
+    max-height: 75vh;
+    overflow-y: auto;
+  }
+
+  .mobileMenu a {
+    display: block;
+    padding: 12px 10px;
+    color: #6B5040;
+    text-decoration: none;
+    font-size: 15px;
+  }
+
+  .mobileMenu a:hover,
+  .mobileMenu a:focus-visible {
+    background: #F3D9DF;
+    border-radius: 8px;
+  }
+
+  .mobileMenuTitle {
+    color: #C06D85;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    margin-bottom: 8px;
+  }
+
+  .mobileMenuDivider {
+    border-top: 1px solid #C6A15B;
+    margin: 12px 0;
+  }
+}
+
+  
 </style>
 </head>
 <body>
 
 <header>
   <div class="chain-row">
+    <button type="button"
+        id="mobileMenuBtn"
+        class="mobileMenuBtn"
+        aria-label="Open navigation menu"
+        aria-expanded="false"
+        aria-controls="mobileMenu">
+  <span></span>
+  <span></span>
+  <span></span>
+</button>
     <a href="#top" class="brandmark">Juriah<span>Monique Adornments</span></a>
 
     <nav class="charm-chain" aria-label="Primary">
@@ -488,6 +581,23 @@
       </button>
     </nav>
   </div>
+  
+<!-- MOBILE NAVIGATION MENU -->
+<nav id="mobileMenu" class="mobileMenu" aria-label="Mobile navigation" hidden>
+  <div class="mobileMenuTitle">SHOP</div>
+
+  <a href="#products">All Jewelry</a>
+  <a href="#products" data-shop-category="necklace">Necklaces</a>
+  <a href="#products" data-shop-category="earrings">Earrings</a>
+  <a href="#products" data-shop-category="rings">Rings</a>
+  <a href="#products" data-shop-category="bracelets">Bracelets</a>
+
+  <div class="mobileMenuDivider"></div>
+
+  <a href="#contact">Contact Us</a>
+  <a href="#story">Our Story</a>
+</nav>
+
 </header>
 
 <main id="top">
@@ -847,6 +957,47 @@
 })();
 </script>
 
+
+<script>
+(function () {
+  var button = document.getElementById('mobileMenuBtn');
+  var menu = document.getElementById('mobileMenu');
+
+  if (!button || !menu) return;
+
+  function closeMobileMenu() {
+    menu.hidden = true;
+    button.setAttribute('aria-expanded', 'false');
+    button.setAttribute('aria-label', 'Open navigation menu');
+  }
+
+  button.addEventListener('click', function () {
+    var opening = menu.hidden;
+    menu.hidden = !opening;
+    button.setAttribute('aria-expanded', String(opening));
+    button.setAttribute(
+      'aria-label',
+      opening ? 'Close navigation menu' : 'Open navigation menu'
+    );
+  });
+
+  menu.querySelectorAll('a').forEach(function (link) {
+    link.addEventListener('click', closeMobileMenu);
+  });
+
+  document.addEventListener('click', function (event) {
+    if (!menu.hidden &&
+        !button.contains(event.target) &&
+        !menu.contains(event.target)) {
+      closeMobileMenu();
+    }
+  });
+
+  document.addEventListener('keydown', function (event) {
+    if (event.key === 'Escape') closeMobileMenu();
+  });
+})();
+</script>
 
 </body>
 </html>
