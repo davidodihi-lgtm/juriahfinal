@@ -530,6 +530,82 @@
   }
 }
 
+/* JEWELRY SEARCH */
+.charm-search {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  color: #6B5040;
+  cursor: pointer;
+  padding: 10px;
+}
+
+.searchPanel[hidden] {
+  display: none !important;
+}
+
+.searchPanel {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  z-index: 1100;
+  background: #FAF3EA;
+  padding: 24px;
+  border-top: 1px solid #C6A15B;
+  box-shadow: 0 12px 25px rgba(74,59,54,.12);
+}
+
+.searchPanel label {
+  display: block;
+  color: #6B5040;
+  margin-bottom: 12px;
+  font-weight: 600;
+}
+
+.searchInputRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+#jewelrySearch {
+  flex: 1;
+  min-width: 0;
+  padding: 13px;
+  border: 1px solid #C6A15B;
+  border-radius: 8px;
+  font: inherit;
+}
+
+#closeSearch {
+  background: transparent;
+  border: none;
+  color: #6B5040;
+  font-size: 28px;
+  cursor: pointer;
+}
+
+#searchResults {
+  margin-top: 14px;
+  max-height: 45vh;
+  overflow-y: auto;
+}
+
+#searchResults a {
+  display: block;
+  padding: 12px;
+  color: #6B5040;
+  text-decoration: none;
+  border-bottom: 1px solid #F3D9DF;
+}
+
+#searchResults a:hover {
+  background: #F3D9DF;
+}
+
   
 </style>
 </head>
@@ -574,6 +650,21 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="#C6A15B" stroke-width="1.4"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10v9h13v-9"/><path d="M10 19v-5h4v5"/><rect x="14.5" y="6" width="2.4" height="3" fill="#C6A15B" stroke="none"/></svg>
         <span class="label">Story</span>
       </a>
+      
+<button type="button"
+        id="searchToggle"
+        class="charm-search"
+        aria-label="Search jewelry"
+        aria-expanded="false"
+        aria-controls="searchPanel">
+  <svg width="22" height="22" viewBox="0 0 24 24"
+       fill="none" stroke="currentColor"
+       stroke-width="1.8" stroke-linecap="round">
+    <circle cx="10.5" cy="10.5" r="6.5"></circle>
+    <path d="M15.5 15.5L21 21"></path>
+  </svg>
+</button>
+
       <button type="button" class="charm-cart" id="cartToggle" aria-label="Open bag" aria-expanded="false" aria-controls="cartDrawer">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="9" cy="20" r="1"/><circle cx="17" cy="20" r="1"/><path d="M2.5 3h2l2.4 12.4a2 2 0 0 0 2 1.6h7.7a2 2 0 0 0 2-1.6L20 7H6"/></svg>
         Bag
@@ -597,6 +688,23 @@
   <a href="#contact">Contact Us</a>
   <a href="#story">Our Story</a>
 </nav>
+
+<!-- JEWELRY SEARCH PANEL -->
+<div id="searchPanel" class="searchPanel" hidden>
+  <label for="jewelrySearch">Search our jewelry</label>
+  <div class="searchInputRow">
+    <input
+      type="search"
+      id="jewelrySearch"
+      placeholder="Search necklaces, bracelets..."
+      autocomplete="off"
+    >
+    <button type="button" id="closeSearch" aria-label="Close search">
+      &times;
+    </button>
+  </div>
+  <div id="searchResults" aria-live="polite"></div>
+</div>
 
 </header>
 
@@ -995,6 +1103,89 @@
 
   document.addEventListener('keydown', function (event) {
     if (event.key === 'Escape') closeMobileMenu();
+  });
+})();
+</script>
+
+<script>
+(function () {
+  const button = document.getElementById('searchToggle');
+  const panel = document.getElementById('searchPanel');
+  const closeButton = document.getElementById('closeSearch');
+  const input = document.getElementById('jewelrySearch');
+
+  if (!button || !panel || !closeButton || !input) return;
+
+  function closeSearchPanel() {
+    panel.hidden = true;
+    button.setAttribute('aria-expanded', 'false');
+  }
+
+  button.addEventListener('click', function () {
+    const opening = panel.hidden;
+    panel.hidden = !opening;
+    button.setAttribute('aria-expanded', String(opening));
+
+    if (opening) input.focus();
+  });
+
+  closeButton.addEventListener('click', closeSearchPanel);
+
+  document.addEventListener('keydown', function (event) {
+    if (event.key === 'Escape') closeSearchPanel();
+  });
+})();
+</script>
+
+<script>
+(function () {
+  const input = document.getElementById('jewelrySearch');
+  const results = document.getElementById('searchResults');
+
+  if (!input || !results) return;
+
+  let products = [];
+
+  sb.from('products')
+    .select('id,name,category,price,in_stock')
+    .then(function (response) {
+      if (response.error) {
+        results.textContent = 'Search is temporarily unavailable.';
+        return;
+      }
+      products = response.data || [];
+    });
+
+  input.addEventListener('input', function () {
+    const query = input.value.trim().toLowerCase();
+    results.textContent = '';
+
+    if (!query) return;
+
+    const matches = products.filter(function (product) {
+      return (product.name || '').toLowerCase().includes(query) ||
+             (product.category || '').toLowerCase().includes(query);
+    });
+
+    if (!matches.length) {
+      results.textContent = 'No matching jewelry found.';
+      return;
+    }
+
+    matches.forEach(function (product) {
+      const link = document.createElement('a');
+      link.href = '#products';
+      link.textContent = product.name + ' — $' +
+        Number(product.price).toFixed(2);
+
+      link.addEventListener('click', function () {
+        document.getElementById('searchPanel').hidden = true;
+        document.getElementById('searchToggle')
+          .setAttribute('aria-expanded', 'false');
+      });
+
+      results.appendChild(link);
+    });
   });
 })();
 </script>
