@@ -1146,7 +1146,7 @@
 
   let products = [];
 
-  sb.from('products')
+  supabase.createClient(JD_CONFIG.SUPABASE_URL, JD_CONFIG.SUPABASE_KEY).from('products')
     .select('id,name,category,price,in_stock')
     .then(function (response) {
       if (response.error) {
