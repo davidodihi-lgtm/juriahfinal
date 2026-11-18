@@ -606,6 +606,116 @@
   background: #F3D9DF;
 }
 
+/* PRODUCT DETAILS POPUP */
+.productModal[hidden] {
+  display: none !important;
+}
+
+.productModal {
+  position: fixed;
+  inset: 0;
+  z-index: 3000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.productModalBackdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(35, 25, 20, 0.7);
+}
+
+.productModalContent {
+  position: relative;
+  background: #FAF3EA;
+  border-radius: 18px;
+  padding: 35px;
+  width: 100%;
+  max-width: 950px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 60px rgba(0,0,0,.2);
+}
+
+.productModalClose {
+  position: absolute;
+  top: 12px;
+  right: 20px;
+  background: transparent;
+  border: none;
+  font-size: 32px;
+  color: #6B5040;
+  cursor: pointer;
+  z-index: 2;
+}
+
+.productModalGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 35px;
+  align-items: center;
+}
+
+.productModalImage img {
+  width: 100%;
+  max-height: 480px;
+  object-fit: contain;
+  border-radius: 12px;
+  cursor: zoom-in;
+}
+
+.productModalImage img.zoomed {
+  transform: scale(1.7);
+  cursor: zoom-out;
+}
+
+.productModalImage {
+  overflow: hidden;
+  border-radius: 12px;
+}
+
+.productModalImage p {
+  text-align: center;
+  font-size: 12px;
+  color: #6B5040;
+  margin-top: 10px;
+}
+
+.productModalInfo h2 {
+  font-size: 30px;
+  color: #6B5040;
+  margin-bottom: 15px;
+}
+
+.productModalInfo h3 {
+  font-size: 24px;
+  color: #C06D85;
+  margin-bottom: 20px;
+}
+
+.productModalInfo p {
+  color: #6B5040;
+  line-height: 1.7;
+  margin-bottom: 18px;
+}
+
+@media (max-width: 700px) {
+  .productModalContent {
+    padding: 25px 18px;
+  }
+
+  .productModalGrid {
+    grid-template-columns: 1fr;
+    gap: 18px;
+  }
+
+  .productModalImage img {
+    max-height: 300px;
+  }
+}
+
   
 </style>
 </head>
@@ -832,6 +942,44 @@
 
 </main>
 
+<!-- PRODUCT DETAILS POPUP -->
+<div id="productModal" class="productModal" hidden>
+  <div class="productModalBackdrop" id="productModalBackdrop"></div>
+
+  <div class="productModalContent"
+       role="dialog"
+       aria-modal="true"
+       aria-labelledby="modalProductName">
+
+    <button type="button"
+            id="closeProductModal"
+            class="productModalClose"
+            aria-label="Close product details">
+      &times;
+    </button>
+
+    <div class="productModalGrid">
+      <div class="productModalImage">
+        <img id="modalProductImage" alt="">
+        <p>Tap image to zoom</p>
+      </div>
+
+      <div class="productModalInfo">
+        <h2 id="modalProductName"></h2>
+        <h3 id="modalProductPrice"></h3>
+        <p id="modalProductDescription"></p>
+        <p id="modalProductStock"></p>
+
+        <button type="button"
+                id="modalAddToCart"
+                class="btn-primary">
+          Add to Bag
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- ===================== CART DRAWER ===================== -->
 <div class="cart-overlay" id="cartOverlay"></div>
 <aside class="cart-drawer" id="cartDrawer" aria-hidden="true">
@@ -955,6 +1103,59 @@
     }
   }
 
+function openProductDetails(p) {
+  var modal = document.getElementById('productModal');
+  var image = document.getElementById('modalProductImage');
+  var addButton = document.getElementById('modalAddToCart');
+  var closeButton = document.getElementById('closeProductModal');
+  var backdrop = document.getElementById('productModalBackdrop');
+
+  if (!modal || !image || !addButton) return;
+
+  document.getElementById('modalProductName').textContent = p.name;
+  document.getElementById('modalProductPrice').textContent = money(p.price);
+  document.getElementById('modalProductDescription').textContent =
+    p.description || 'Handmade with love by Juriah Monique Adornments.';
+
+  document.getElementById('modalProductStock').textContent =
+    p.in_stock === false ? 'Sold Out' : 'Available';
+
+  image.src = p.image_url || '';
+  image.alt = p.name;
+  image.classList.remove('zoomed');
+
+  addButton.disabled = p.in_stock === false;
+  addButton.textContent =
+    p.in_stock === false ? 'Sold Out' : 'Add to Bag';
+
+  modal.hidden = false;
+  document.body.style.overflow = 'hidden';
+
+  function closeModal() {
+    modal.hidden = true;
+    image.classList.remove('zoomed');
+    document.body.style.overflow = '';
+  }
+
+  closeButton.onclick = closeModal;
+  backdrop.onclick = closeModal;
+
+  image.onclick = function () {
+    image.classList.toggle('zoomed');
+  };
+
+  addButton.onclick = function () {
+    if (p.in_stock === false) return;
+    addToCart(p, addButton);
+  };
+
+  modal.onkeydown = function (event) {
+    if (event.key === 'Escape') closeModal();
+  };
+
+  closeButton.focus();
+}
+
   cartItemsEl.addEventListener('click', function(e){
     if(e.target.classList.contains('ci-remove')){ cart.splice(parseInt(e.target.dataset.index,10),1); renderCart(); }
   });
@@ -988,6 +1189,21 @@
       var stage = el('div','photo-stage');
       if(p.image_url){ var img=document.createElement('img'); img.src=p.image_url; img.alt=p.name; img.loading='lazy'; stage.appendChild(img); }
       card.appendChild(stage);
+      stage.style.cursor = 'zoom-in';
+stage.setAttribute('role', 'button');
+stage.setAttribute('tabindex', '0');
+stage.setAttribute('aria-label', 'View details for ' + p.name);
+
+stage.addEventListener('click', function () {
+  openProductDetails(p);
+});
+
+stage.addEventListener('keydown', function (event) {
+  if (event.key === 'Enter' || event.key === ' ') {
+    event.preventDefault();
+    openProductDetails(p);
+  }
+});
 
       var body = el('div','card-body');
       body.appendChild(el('h4',null,p.name));
