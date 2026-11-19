@@ -1082,7 +1082,22 @@
 (function(){
   var sb = supabase.createClient(JD_CONFIG.SUPABASE_URL, JD_CONFIG.SUPABASE_KEY);
   var cart = []; // {id, name, price, img, qty}
+var allProducts = [];
+  
+function filterProducts(category) {
+  var selected = (category || 'all').toLowerCase();
 
+  var filtered = selected === 'all'
+    ? allProducts
+    : allProducts.filter(function(p) {
+        var productCategory = (p.category || '').toLowerCase();
+        return productCategory === selected ||
+          productCategory.replace(/s$/, '') === selected.replace(/s$/, '');
+      });
+
+  renderProducts(filtered);
+}
+window.filterProducts = filterProducts;
   var $ = function(id){ return document.getElementById(id); };
   var cartToggle=$('cartToggle'), cartOverlay=$('cartOverlay'), cartDrawer=$('cartDrawer'),
       cartClose=$('cartClose'), cartItemsEl=$('cartItems'), cartSubtotalEl=$('cartSubtotal'),
@@ -1271,7 +1286,8 @@ stage.addEventListener('keydown', function (event) {
   sb.from('products').select('*').order('sort_order',{ascending:true}).order('created_at',{ascending:true})
     .then(function(res){
       if(res.error){ grid.textContent=''; grid.appendChild(el('p','grid-msg','We couldn’t load the collection right now. Please refresh in a moment.')); console.error(res.error); return; }
-      renderProducts(res.data||[]);
+     allProducts = res.data || [];
+renderProducts(allProducts);
     });
 
   var nf=$('newsForm');
@@ -1298,8 +1314,12 @@ stage.addEventListener('keydown', function (event) {
   });
 
   menu.querySelectorAll('a').forEach(function (link) {
-    link.addEventListener('click', closeShopMenu);
+  link.addEventListener('click', function () {
+    var category = link.getAttribute('data-shop-category') || 'all';
+    filterProducts(category);
+    closeShopMenu();
   });
+});
 
   document.addEventListener('click', function (event) {
     if (!button.contains(event.target) &&
@@ -1341,8 +1361,18 @@ stage.addEventListener('keydown', function (event) {
   });
 
   menu.querySelectorAll('a').forEach(function (link) {
-    link.addEventListener('click', closeMobileMenu);
+  link.addEventListener('click', function () {
+    var category = link.getAttribute('data-shop-category');
+
+    if (category) {
+      filterProducts(category);
+    } else if (link.textContent.trim() === 'All Jewelry') {
+      filterProducts('all');
+    }
+
+    closeMobileMenu();
   });
+});
 
   document.addEventListener('click', function (event) {
     if (!menu.hidden &&
