@@ -21,7 +21,7 @@ module.exports = async (req, res) => {
 
     const { data: products, error } = await supabase
       .from("products")
-      .select("id,name,price,image_url,in_stock")
+      .select("id,name,price,image_url,in_stock,stock_quantity")
       .in("id", items.map((i) => String(i.id)));
     if (error) throw error;
     const byId = new Map((products || []).map((p) => [p.id, p]));
@@ -34,6 +34,14 @@ module.exports = async (req, res) => {
       if (!p) return res.status(400).json({ error: "An item in your bag is no longer available." });
       if (p.in_stock === false) return res.status(400).json({ error: `${p.name} is sold out.` });
       const qty = Math.min(20, Math.max(1, parseInt(it.qty, 10) || 1));
+      if (
+  process.env.INVENTORY_TRACKING_ENABLED === "true" &&
+  qty > Number(p.stock_quantity || 0)
+) {
+  return res.status(400).json({
+    error: `Only ${p.stock_quantity || 0} of ${p.name} available.`
+  });
+}
 
       const img = /^https?:\/\//.test(p.image_url || "") ? p.image_url : `${site}/${p.image_url || ""}`;
       line_items.push({
