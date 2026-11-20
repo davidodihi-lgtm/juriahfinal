@@ -143,12 +143,9 @@ module.exports = async (req, res) => {
     ) {
       const session = event.data.object;
 
-      if (
-        session.payment_status !== "paid" &&
-        session.payment_status !== "no_payment_required"
-      ) {
-        return res.status(200).json({ received: true });
-      }
+  if (session.payment_status !== "paid") {
+  return res.status(200).json({ received: true });
+}
 
       const lineItems = await stripe.checkout.sessions.listLineItems(
         session.id,
